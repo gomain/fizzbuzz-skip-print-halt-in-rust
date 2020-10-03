@@ -2,10 +2,17 @@ fn main() {
     let rules = vec![
         (Condition::MultipleOf(3), "fizz".to_string()),
         (Condition::MultipleOf(5), "buzz".to_string()),
-        (Condition::MultipleOf(7), "hurray".to_string()),
+        (Condition::MultipleOf(7), "zazz".to_string()),
     ];
-    for i in 1..106 {
-        println!("{}", say(i, &rules));
+    let all = rules
+        .iter()
+        .fold("".to_string(), |cur, (_, word)| cur + word);
+    for i in 1.. {
+        let say = say(i, &rules);
+        println!("{}", say);
+        if say == all {
+            break;
+        }
     }
 }
 
@@ -20,7 +27,7 @@ fn say(i: u32, rules: &Vec<(Condition, String)>) -> String {
         .map(|(_, word)| -> &str { word })
         .collect();
     if words.len() > 0 {
-        words.join("")
+        words.iter().fold("".to_string(), |cur, next| cur + next)
     } else {
         i.to_string()
     }
