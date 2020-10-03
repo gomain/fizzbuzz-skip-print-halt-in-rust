@@ -16,16 +16,8 @@ enum Condition {
 fn say(i: u32, rules: &Vec<(Condition, String)>) -> String {
     let words: Vec<&str> = rules
         .into_iter()
-        .map(
-            |(cond, word)| -> &str {
-                if satisfy(cond, i) {
-                    word
-                } else {
-                    ""
-                }
-            },
-        )
-        .filter(|s| -> bool { s.len() > 0 })
+        .filter(|(cond, _)| satisfy(cond, i))
+        .map(|(_, word)| -> &str { word })
         .collect();
     if words.len() > 0 {
         words.join("")
