@@ -14,25 +14,28 @@ enum Condition {
 }
 
 fn say(i: u32, rules: &Vec<(Condition, String)>) -> String {
-    let mut words = vec![i.to_string()];
-    for (cond, word) in rules {
-        if satisfy(cond, i) {
-            words.push(word.to_string());
-        }
+    let words: Vec<&str> = rules
+        .into_iter()
+        .map(
+            |(cond, word)| -> &str {
+                if satisfy(cond, i) {
+                    word
+                } else {
+                    ""
+                }
+            },
+        )
+        .filter(|s| -> bool { s.len() > 0 })
+        .collect();
+    if words.len() > 0 {
+        words.join("")
+    } else {
+        i.to_string()
     }
-    join_tail_or_head(&words)
 }
 
 fn satisfy(cond: &Condition, i: u32) -> bool {
     match cond {
         Condition::MultipleOf(n) => i % n == 0,
-    }
-}
-
-fn join_tail_or_head(words: &Vec<String>) -> String {
-    if words.len() == 1 {
-        words[0].to_string()
-    } else {
-        words[1..].join("_").to_string()
     }
 }
