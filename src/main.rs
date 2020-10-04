@@ -1,16 +1,15 @@
 fn main() {
-    let rules = vec![
-        (Condition::MultipleOf(3), "fizz".to_string()),
-        (Condition::MultipleOf(5), "buzz".to_string()),
-        (Condition::MultipleOf(7), "zazz".to_string()),
-    ];
-    let all = rules
+    let rules: Vec<(Condition, String)> = vec![(3, "Fizz"), (5, "Buzz"), (7, "Hizz"), (11, "Howl")]
+        .into_iter()
+        .map(|(n, word)| (Condition::MultipleOf(n), word.to_string()))
+        .collect();
+    let say_all = rules
         .iter()
         .fold("".to_string(), |cur, (_, word)| cur + word);
     for i in 1.. {
         let say = say(i, &rules);
         println!("{}", say);
-        if say == all {
+        if say == say_all {
             break;
         }
     }
