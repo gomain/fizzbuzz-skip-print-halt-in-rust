@@ -19,13 +19,13 @@ enum Condition {
     MultipleOf(u32),
 }
 
-fn say(i: u32, rules: &Vec<(Condition, String)>) -> String {
+fn say(i: u32, rules: &[(Condition, String)]) -> String {
     let words: Vec<&str> = rules
-        .into_iter()
+        .iter()
         .filter(|(cond, _)| satisfy(cond, i))
         .map(|(_, word)| -> &str { word })
         .collect();
-    if words.len() > 0 {
+    if !words.is_empty() {
         words.iter().fold("".to_string(), |cur, next| cur + next)
     } else {
         i.to_string()
