@@ -32,7 +32,7 @@ impl<'a> Program<'a> {
             match cmd {
                 Cmd::Skip => continue,
                 Cmd::Halt => {
-                    println!("");
+                    print!("\n");
                     return;
                 }
                 Cmd::PrintString(it) => print!("{}", it),
