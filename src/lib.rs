@@ -4,14 +4,14 @@ use std::ops;
 
 pub struct Rule<'a>(pub Condition, pub &'a str);
 
+pub struct Program<'a> {
+    cmds: Vec<Cmd<'a>>,
+}
+
 enum Cmd<'a> {
     Skip,
     Halt,
     Print(Box<dyn Display + 'a>),
-}
-
-pub struct Program<'a> {
-    cmds: Vec<Cmd<'a>>,
 }
 
 impl<'a> Program<'a> {
@@ -28,7 +28,7 @@ impl<'a> Program<'a> {
                     acc + ProgramWithHole::new(Program::print(Box::new(word)), Program::halt())
                 },
             )
-            .join()
+            .into()
     }
 
     pub fn println(&self) {
@@ -88,20 +88,6 @@ impl<'a> ops::Add for Program<'a> {
     }
 }
 
-impl<'a> ops::Add for &'a Program<'a> {
-    type Output = Program<'a>;
-    fn add(self, other: &'a Program) -> Program<'a> {
-        self.clone() + other.clone()
-    }
-}
-
-impl<'a> ops::Add<&'a Program<'a>> for Program<'a> {
-    type Output = Self;
-    fn add(self, other: &'a Program) -> Self {
-        self + other.clone()
-    }
-}
-
 struct ProgramWithHole<'a> {
     pre: Program<'a>,
     post: Program<'a>,
@@ -111,9 +97,11 @@ impl<'a> ProgramWithHole<'a> {
     fn new(pre: Program<'a>, post: Program<'a>) -> Self {
         ProgramWithHole { pre, post }
     }
+}
 
-    fn join(self) -> Program<'a> {
-        self.pre + self.post
+impl<'a> From<ProgramWithHole<'a>> for Program<'a> {
+    fn from(this: ProgramWithHole<'a>) -> Self {
+        this.pre + this.post
     }
 }
 
@@ -121,13 +109,6 @@ impl<'a> ops::Add for ProgramWithHole<'a> {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         ProgramWithHole::new(self.pre + other.pre, other.post + self.post)
-    }
-}
-
-impl<'a> ops::Add for &'a ProgramWithHole<'a> {
-    type Output = ProgramWithHole<'a>;
-    fn add(self, other: &'a ProgramWithHole) -> ProgramWithHole<'a> {
-        self.clone() + other.clone()
     }
 }
 
