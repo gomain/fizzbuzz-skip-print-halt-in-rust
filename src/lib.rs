@@ -1,17 +1,15 @@
+use std::fmt::Display;
 use std::matches;
 use std::ops;
 
 pub struct Rule<'a>(pub Condition, pub &'a str);
 
-#[derive(Clone, Debug)]
 enum Cmd<'a> {
     Skip,
     Halt,
-    PlaceString(&'a str),
-    PlaceNum(u32),
+    Print(Box<dyn Display + 'a>),
 }
 
-#[derive(Clone, Debug)]
 pub struct Program<'a> {
     cmds: Vec<Cmd<'a>>,
 }
@@ -22,24 +20,26 @@ impl<'a> Program<'a> {
             .into_iter()
             .filter_map(|Rule(cond, word)| if satisfy(cond, n) { Some(word) } else { None })
             .fold(
-                ProgramWithHole::new(Program::skip(), Program::place_num(n) + Program::halt()),
-                |acc, word| {
-                    acc + ProgramWithHole::new(Program::place_string(word), Program::halt())
+                ProgramWithHole::new(
+                    Program::skip(),
+                    Program::print(Box::new(n)) + Program::halt(),
+                ),
+                |acc, &word| {
+                    acc + ProgramWithHole::new(Program::print(Box::new(word)), Program::halt())
                 },
             )
             .join()
     }
 
     pub fn println(&self) {
-        for cmd in &self.cmds {
+        for cmd in self.cmds.iter() {
             match cmd {
                 Cmd::Skip => continue,
                 Cmd::Halt => {
                     print!("\n");
                     return;
                 }
-                Cmd::PlaceString(s) => print!("{}", s),
-                Cmd::PlaceNum(n) => print!("{}", n),
+                Cmd::Print(it) => print!("{}", it),
             }
         }
     }
@@ -48,10 +48,12 @@ impl<'a> Program<'a> {
         self.cmds
             .iter()
             .take_while(|cmd| !matches!(cmd, Cmd::Halt))
-            .map(|cmd| match cmd {
-                Cmd::PlaceString(s) => s.to_string(),
-                Cmd::PlaceNum(n) => n.to_string(),
-                _ => "".to_string(),
+            .map(|cmd| {
+                if let Cmd::Print(it) = cmd {
+                    it.to_string()
+                } else {
+                    "".to_string()
+                }
             })
             .collect()
     }
@@ -68,12 +70,8 @@ impl<'a> Program<'a> {
         Program::cmd(Cmd::Skip)
     }
 
-    fn place_string(s: &'a str) -> Program<'a> {
-        Program::cmd(Cmd::PlaceString(s))
-    }
-
-    fn place_num(n: u32) -> Program<'a> {
-        Program::cmd(Cmd::PlaceNum(n))
+    fn print(it: Box<dyn Display + 'a>) -> Program<'a> {
+        Program::cmd(Cmd::Print(it))
     }
 }
 
@@ -104,7 +102,6 @@ impl<'a> ops::Add<&'a Program<'a>> for Program<'a> {
     }
 }
 
-#[derive(Debug)]
 struct ProgramWithHole<'a> {
     pre: Program<'a>,
     post: Program<'a>,
@@ -134,14 +131,6 @@ impl<'a> ops::Add for &'a ProgramWithHole<'a> {
     }
 }
 
-impl<'a> ops::Add<&'a Program<'a>> for &'a ProgramWithHole<'a> {
-    type Output = Program<'a>;
-    fn add(self, other: &'a Program) -> Program<'a> {
-        self.pre.clone() + other + self.post.clone()
-    }
-}
-
-#[derive(Debug)]
 pub enum Condition {
     HasAsFactor(u32),
 }

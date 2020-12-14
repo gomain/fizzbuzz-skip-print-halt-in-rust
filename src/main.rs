@@ -8,6 +8,8 @@ fn main() {
 
     (1..1156) // 1155 is the first number that places all words!
         .for_each(|n| {
-            println!("{:<4}: {}", n, Program::new(&rules, n).string());
+            let fizz_buzz = Program::new(&rules, n);
+            //println!("{}", fizz_buzz.string());
+            fizz_buzz.println();
         })
 }
