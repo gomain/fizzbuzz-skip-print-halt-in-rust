@@ -1,24 +1,14 @@
-pub fn program<'a>(n: u32, rules: &'a Rules) -> Program<'a> {
-    rules
-        .into_iter()
-        .filter(|(cond, _)| satisfy(cond, n))
-        .fold(
-            ProgramWithHole::new(Program::skip(), Program::print_num(n) + Program::halt()),
-            |cur, (_, word)| {
-                cur + ProgramWithHole::new(Program::print_string(word), Program::halt())
-            },
-        )
-        .join()
-}
+use std::matches;
+use std::ops;
 
-pub type Rules<'a> = Vec<(Condition, &'a str)>;
+pub struct Rule<'a>(pub Condition, pub &'a str);
 
 #[derive(Clone, Debug)]
 enum Cmd<'a> {
     Skip,
     Halt,
-    PrintString(&'a str),
-    PrintNum(u32),
+    PlaceString(&'a str),
+    PlaceNum(u32),
 }
 
 #[derive(Clone, Debug)]
@@ -27,7 +17,20 @@ pub struct Program<'a> {
 }
 
 impl<'a> Program<'a> {
-    pub fn run(&self) {
+    pub fn new(rules: &'a [Rule<'a>], n: u32) -> Program<'a> {
+        rules
+            .into_iter()
+            .filter_map(|Rule(cond, word)| if satisfy(cond, n) { Some(word) } else { None })
+            .fold(
+                ProgramWithHole::new(Program::skip(), Program::place_num(n) + Program::halt()),
+                |acc, word| {
+                    acc + ProgramWithHole::new(Program::place_string(word), Program::halt())
+                },
+            )
+            .join()
+    }
+
+    pub fn println(&self) {
         for cmd in &self.cmds {
             match cmd {
                 Cmd::Skip => continue,
@@ -35,34 +38,44 @@ impl<'a> Program<'a> {
                     print!("\n");
                     return;
                 }
-                Cmd::PrintString(it) => print!("{}", it),
-                Cmd::PrintNum(n) => print!("{}", n),
+                Cmd::PlaceString(s) => print!("{}", s),
+                Cmd::PlaceNum(n) => print!("{}", n),
             }
         }
     }
 
-    fn single(cmd: Cmd<'a>) -> Program<'a> {
+    pub fn string(&self) -> String {
+        self.cmds
+            .iter()
+            .take_while(|cmd| !matches!(cmd, Cmd::Halt))
+            .map(|cmd| match cmd {
+                Cmd::PlaceString(s) => s.to_string(),
+                Cmd::PlaceNum(n) => n.to_string(),
+                _ => "".to_string(),
+            })
+            .collect()
+    }
+
+    fn cmd(cmd: Cmd<'a>) -> Program<'a> {
         Program { cmds: vec![cmd] }
     }
 
     fn halt() -> Program<'a> {
-        Program::single(Cmd::Halt)
+        Program::cmd(Cmd::Halt)
     }
 
     fn skip() -> Program<'a> {
-        Program::single(Cmd::Skip)
+        Program::cmd(Cmd::Skip)
     }
 
-    fn print_string(s: &'a str) -> Program<'a> {
-        Program::single(Cmd::PrintString(s))
+    fn place_string(s: &'a str) -> Program<'a> {
+        Program::cmd(Cmd::PlaceString(s))
     }
 
-    fn print_num(n: u32) -> Program<'a> {
-        Program::single(Cmd::PrintNum(n))
+    fn place_num(n: u32) -> Program<'a> {
+        Program::cmd(Cmd::PlaceNum(n))
     }
 }
-
-use std::ops;
 
 impl<'a> ops::Add for Program<'a> {
     type Output = Self;
@@ -130,11 +143,11 @@ impl<'a> ops::Add<&'a Program<'a>> for &'a ProgramWithHole<'a> {
 
 #[derive(Debug)]
 pub enum Condition {
-    MultipleOf(u32),
+    HasAsFactor(u32),
 }
 
 pub fn satisfy(cond: &Condition, i: u32) -> bool {
     match cond {
-        Condition::MultipleOf(n) => i % n == 0,
+        Condition::HasAsFactor(n) => i % n == 0,
     }
 }
